@@ -1,0 +1,312 @@
+local TweenService = game:GetService("TweenService")
+local HttpService = game:GetService("HttpService")
+local StarterGui = game:GetService("StarterGui")
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local LocalPlayer = Players.LocalPlayer
+
+local Library = {}
+
+-- Main Window Creator
+function Library.CreateWindow(config)
+    local Window = {}
+    
+    -- Default Config
+    local Config = {
+        Name = config.Name or "Premium Script",
+        Size = config.Size or UDim2.new(0, 480, 0, 340),
+        Resizable = config.Resizable or false,
+        ToggleKey = Enum.KeyCode.Insert,
+        ToggleButton = config.ToggleButton or { Enabled = true, AssetId = nil, Size = UDim2.new(0, 60, 0, 60) },
+        
+        Theme = {
+            Accent = config.Theme and config.Theme.Accent or Color3.fromRGB(0, 170, 255),
+            Text = config.Theme and config.Theme.Text or Color3.fromRGB(255, 255, 255),
+            Gradient = config.Theme and config.Theme.Gradient or {
+                Color3.fromRGB(40, 40, 80),
+                Color3.fromRGB(10, 10, 30)
+            }
+        },
+        
+        KeyUrl = config.KeyUrl or "",
+        DiscordWebhook = config.DiscordWebhook or "",
+        LoadScript = config.LoadScript or function()
+            warn("No LoadScript provided!")
+        end
+    }
+
+    local Verified = false
+    local Open = false
+
+    -- ScreenGui
+    local ScreenGui = Instance.new("ScreenGui")
+    ScreenGui.Name = "PremiumKeySystem"
+    ScreenGui.ResetOnSpawn = false
+    ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+
+    -- Main Window Frame
+    local MainFrame = Instance.new("Frame")
+    MainFrame.Size = Config.Size
+    MainFrame.Position = UDim2.new(0.5, -Config.Size.X.Offset/2, 0.5, -Config.Size.Y.Offset/2)
+    MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 25)
+    MainFrame.BorderSizePixel = 0
+    MainFrame.Visible = false
+    MainFrame.Parent = ScreenGui
+
+    local Corner = Instance.new("UICorner")
+    Corner.CornerRadius = UDim.new(0, 12)
+    Corner.Parent = MainFrame
+
+    local Gradient = Instance.new("UIGradient")
+    Gradient.Color = ColorSequence.new(Config.Theme.Gradient[1], Config.Theme.Gradient[2])
+    Gradient.Rotation = 90
+    Gradient.Parent = MainFrame
+
+    -- Title Bar (Draggable)
+    local TitleBar = Instance.new("Frame")
+    TitleBar.Size = UDim2.new(1, 0, 0, 50)
+    TitleBar.BackgroundTransparency = 1
+    TitleBar.Parent = MainFrame
+
+    local Title = Instance.new("TextLabel")
+    Title.Size = UDim2.new(1, -100, 1, 0)
+    Title.Position = UDim2.new(0, 20, 0, 0)
+    Title.BackgroundTransparency = 1
+    Title.Text = Config.Name
+    Title.TextColor3 = Config.Theme.Text
+    Title.Font = Enum.Font.GothamBold
+    Title.TextSize = 24
+    Title.TextXAlignment = Enum.TextXAlignment.Left
+    Title.Parent = TitleBar
+
+    -- Close Button
+    local CloseBtn = Instance.new("TextButton")
+    CloseBtn.Size = UDim2.new(0, 40, 0, 40)
+    CloseBtn.Position = UDim2.new(1, -50, 0, 5)
+    CloseBtn.BackgroundColor3 = Color3.fromRGB(220, 50, 50)
+    CloseBtn.Text = "×"
+    CloseBtn.TextColor3 = Color3.new(1,1,1)
+    CloseBtn.Font = Enum.Font.GothamBold
+    CloseBtn.TextSize = 30
+    CloseBtn.Parent = TitleBar
+
+    local CloseCorner = Instance.new("UICorner", CloseBtn)
+    CloseCorner.CornerRadius = UDim.new(0, 8)
+
+    CloseBtn.MouseButton1Click:Connect(function()
+        Window:Toggle(false)
+    end)
+
+    -- Logo (Optional)
+    if config.Logo then
+        local Logo = Instance.new("ImageLabel")
+        Logo.Size = UDim2.new(0, 130, 0, 130)
+        Logo.Position = UDim2.new(0.5, -65, 0, 60)
+        Logo.BackgroundTransparency = 1
+        Logo.Image = "rbxassetid://" .. config.Logo
+        Logo.Parent = MainFrame
+    end
+
+    -- Key Input
+    local KeyLabel = Instance.new("TextLabel")
+    KeyLabel.Size = UDim2.new(1, -60, 0, 30)
+    KeyLabel.Position = UDim2.new(0, 30, 0, 210)
+    KeyLabel.BackgroundTransparency = 1
+    KeyLabel.Text = "Enter your key:"
+    KeyLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
+    KeyLabel.Font = Enum.Font.Gotham
+    KeyLabel.TextSize = 18
+    KeyLabel.TextXAlignment = Enum.TextXAlignment.Left
+    KeyLabel.Parent = MainFrame
+
+    local KeyBox = Instance.new("TextBox")
+    KeyBox.Size = UDim2.new(1, -60, 0, 50)
+    KeyBox.Position = UDim2.new(0, 30, 0, 240)
+    KeyBox.BackgroundColor3 = Color3.fromRGB(25, 25, 40)
+    KeyBox.PlaceholderText = "Paste key here..."
+    KeyBox.TextColor3 = Color3.new(1,1,1)
+    KeyBox.Font = Enum.Font.Gotham
+    KeyBox.TextSize = 18
+    KeyBox.Parent = MainFrame
+
+    local BoxCorner = Instance.new("UICorner", KeyBox)
+    BoxCorner.CornerRadius = UDim.new(0, 8)
+
+    -- Verify Button
+    local VerifyBtn = Instance.new("TextButton")
+    VerifyBtn.Size = UDim2.new(1, -60, 0, 50)
+    VerifyBtn.Position = UDim2.new(0, 30, 1, -70)
+    VerifyBtn.BackgroundColor3 = Config.Theme.Accent
+    VerifyBtn.Text = "Verify Key"
+    VerifyBtn.TextColor3 = Color3.new(1,1,1)
+    VerifyBtn.Font = Enum.Font.GothamBold
+    VerifyBtn.TextSize = 20
+    VerifyBtn.Parent = MainFrame
+
+    local VerifyCorner = Instance.new("UICorner", VerifyBtn)
+    VerifyCorner.CornerRadius = UDim.new(0, 8)
+
+    -- Loading Screen
+    local Loader = Instance.new("Frame")
+    Loader.Size = UDim2.new(1, 0, 1, 0)
+    Loader.BackgroundColor3 = Color3.new(0,0,0)
+    Loader.BackgroundTransparency = 0.4
+    Loader.Visible = false
+    Loader.Parent = ScreenGui
+
+    local LoaderBox = Instance.new("Frame")
+    LoaderBox.Size = UDim2.new(0, 350, 0, 200)
+    LoaderBox.Position = UDim2.new(0.5, -175, 0.5, -100)
+    LoaderBox.BackgroundColor3 = Color3.fromRGB(20, 20, 35)
+    LoaderBox.Parent = Loader
+
+    local LCorner = Instance.new("UICorner", LoaderBox)
+    LCorner.CornerRadius = UDim.new(0, 16)
+
+    local LGradient = Instance.new("UIGradient")
+    LGradient.Color = ColorSequence.new(Config.Theme.Gradient[1], Config.Theme.Gradient[2])
+    LGradient.Parent = LoaderBox
+
+    local LoadingText = Instance.new("TextLabel")
+    LoadingText.Size = UDim2.new(1, 0, 0, 70)
+    LoadingText.Position = UDim2.new(0, 0, 0, 40)
+    LoadingText.BackgroundTransparency = 1
+    LoadingText.Text = "Loading Script..."
+    LoadingText.TextColor3 = Color3.new(1,1,1)
+    LoadingText.Font = Enum.Font.GothamBold
+    LoadingText.TextSize = 32
+    LoadingText.Parent = LoaderBox
+
+    local Spinner = Instance.new("ImageLabel")
+    Spinner.Size = UDim2.new(0, 80, 0, 80)
+    Spinner.Position = UDim2.new(0.5, -40, 0.5, -10)
+    Spinner.BackgroundTransparency = 1
+    Spinner.Image = "rbxassetid://3579694209"
+    Spinner.Parent = LoaderBox
+
+    local SpinTween = TweenService:Create(Spinner, TweenInfo.new(1, Enum.EasingStyle.Linear, Enum.EasingDirection.In, -1), {Rotation = 360})
+    SpinTween:Play()
+
+    -- Notification Function
+    local function Notify(title, text, duration)
+        StarterGui:SetCore("SendNotification", {
+            Title = title or "Key System",
+            Text = text,
+            Duration = duration or 5
+        })
+    end
+
+    -- Toggle Button (Optional)
+    if Config.ToggleButton.Enabled then
+        local ToggleBtn = Instance.new("ImageButton")
+        ToggleBtn.Size = Config.ToggleButton.Size
+        ToggleBtn.Position = UDim2.new(0, 20, 0.5, -Config.ToggleButton.Size.Y.Offset/2)
+        ToggleBtn.BackgroundTransparency = 1
+        ToggleBtn.Image = Config.ToggleButton.AssetId and ("rbxassetid://" .. Config.ToggleButton.AssetId) or "rbxassetid://3579694209"
+        ToggleBtn.Parent = LocalPlayer.PlayerGui
+
+        ToggleBtn.MouseButton1Click:Connect(function()
+            if not Verified then Window:Toggle() end
+        end)
+    end
+
+    -- Draggable
+    local dragging = false
+    local dragStart, startPos
+    TitleBar.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            dragStart = input.Position
+            startPos = MainFrame.Position
+        end
+    end)
+
+    TitleBar.InputChanged:Connect(function(input)
+        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local delta = input.Position - dragStart
+            MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end)
+
+    TitleBar.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = false
+        end
+    end)
+
+    -- Verify Function
+    VerifyBtn.MouseButton1Click:Connect(function()
+        local key = KeyBox.Text
+
+        if key == "" then
+            Notify("Error", "Please enter a key!", 4)
+            return
+        end
+
+        local success, keys = pcall(function()
+            return HttpService:GetAsync(Config.KeyUrl)
+        end)
+
+        if not success then
+            Notify("Error", "Failed to connect to key server!", 5)
+            return
+        end
+
+        local valid = false
+        for line in keys:gmatch("[^\r\n]+") do
+            if line:gsub("%s+", "") == key then
+                valid = true
+                break
+            end
+        end
+
+        if valid then
+            Verified = true
+            Notify("Success!", "Key verified! Loading script...", 5)
+
+            if Config.DiscordWebhook ~= "" then
+                spawn(function()
+                    HttpService:PostAsync(Config.DiscordWebhook, HttpService:JSONEncode({
+                        content = "  **Key Verified** `"..key.."` by **"..LocalPlayer.Name.."**"
+                    }))
+                end)
+            end
+
+            task.wait(1.5)
+            MainFrame.Visible = false
+            Loader.Visible = true
+
+            task.wait(2)
+            Config.LoadScript()
+            task.wait(1)
+            ScreenGui:Destroy()
+        else
+            Notify("Invalid", "Wrong key! Try again.", 5)
+            if Config.DiscordWebhook ~= "" then
+                spawn(function()
+                    HttpService:PostAsync(Config.DiscordWebhook, HttpService:JSONEncode({
+                        content = " **Invalid Key** `"..key.."` by **"..LocalPlayer.Name.."**"
+                    }))
+                end)
+            end
+        end
+    end)
+
+    -- Toggle Function
+    function Window:Toggle(state)
+        Open = state ~= nil and state or not Open
+        MainFrame.Visible = Open and not Verified
+    end
+
+    -- Insert Key Toggle
+    UserInputService.InputBegan:Connect(function(input, gpe)
+        if gpe then return end
+        if input.KeyCode == Config.ToggleKey and not Verified then
+            Window:Toggle()
+        end
+    end)
+
+    return Window
+end
+
+return Library
