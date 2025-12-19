@@ -1,6 +1,7 @@
 # key lib 
 ```
-local KeySystem = require("https://raw.githubusercontent.com/Moha-space/DRAGON-HUB-/refs/heads/main/Lib")
+local KeySystem = loadstring(game:HttpGet("https://raw.githubusercontent.com/Moha-space/DRAGON-HUB-/refs/heads/main/Lib", true))()
+
 ```
 ```
 KeySystem.CreateWindow({
