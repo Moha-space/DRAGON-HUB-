@@ -1,7 +1,8 @@
 # key lib 
-
-local KeySystem = require(game.ReplicatedStorage.PremiumKeySystem)
-
+```
+local KeySystem = require("https://raw.githubusercontent.com/Moha-space/DRAGON-HUB-/refs/heads/main/Lib")
+```
+```
 KeySystem.CreateWindow({
     Name = " GUGU GAGA ",
     Size = UDim2.new(0, 500, 0, 360),
@@ -13,7 +14,7 @@ KeySystem.CreateWindow({
         Accent = Color3.fromRGB(138, 43, 226),  -- Purple
         Gradient = {Color3.fromRGB(80, 0, 120), Color3.fromRGB(15, 0, 40)}
     },
-
+```
     ToggleButton = {
         Enabled = true,
         AssetId = 987654321,  -- Custom open button image
@@ -27,3 +28,4 @@ KeySystem.CreateWindow({
         print("Script loaded successfully!")
     end
 })
+```
